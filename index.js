@@ -32,3 +32,18 @@ app.get("/health", (req, res) => {
   res.status(200).json({ok: true, message: "API is running"});
 });
 
+// Books Route 
+app.get("/books", (req, res) => {
+  const q = "SELECT * FROM books";
+
+  db.query(q, (err, data) => {
+    if (err) {
+      return res.status(500).json({ message: "Database error" });
+    }
+    return res.status(200).json(data);
+  });
+});
+
+app.listen(5000, () => {
+  console.log("Server running on port 5000");
+});
