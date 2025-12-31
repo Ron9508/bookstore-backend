@@ -43,20 +43,6 @@ const db = mysql.createPool({
 }
 )
 
-// Test database connection
-db.getConnection((err) => {
-  if (err) {
-    console.error("Database connection failed:", err)
-  } else {
-    console.log("Connected to MySQL database");
-  }
-});
-
-// Heath check
-app.get("/health", (req, res) => {
-  res.status(200).json({ok: true, message: "API is running"});
-});
-
 // Books Route 
 app.get("/books", (req, res) => {
   const q = "SELECT * FROM books";
@@ -220,7 +206,6 @@ app.get("/orders/my", verifyToken, (req, res) => {
     return res.json(rows);
   });
 });
-
 
 app.listen(5000, () => {
   console.log("Server running on port 5000");
