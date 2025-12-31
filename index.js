@@ -213,6 +213,15 @@ app.listen(PORT , () => {
   console.log("Server running on port ${PORT}");
 });
 
+app.get("/", (req, res) => {
+  res.send("API is running");
+});
+
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
+});
+
+
 // Add a new book
 app.post("/books", verifyToken, (req, res) => {
   const { title, author, isbn13, price, stock } = req.body;
