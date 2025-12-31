@@ -124,3 +124,23 @@ app.put("/books/:id", (req, res) => {
     return res.json({ message: "Book updated successfully" });
   });
 });
+
+// Delete a book
+app.delete("/books/:id", (req, res) => {
+  const bookId = req.params.id;
+
+  const q = "DELETE FROM books WHERE id = ?";
+
+  db.query(q, [bookId], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    return res.json({ message: "Book deleted successfully" });
+  });
+});
