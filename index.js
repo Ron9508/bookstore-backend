@@ -106,7 +106,7 @@ app.post("/login", (req, res) => {
     return res.status(400).json({ message: "Missing email or password" });
   }
 
-  const q = "SELECT id, email, role, password_hash FROM users WHERE email = ?";
+  const q = "SELECT id, name, email, role, password_hash FROM users WHERE email = ?";
   db.query(q, [email], async (err, data) => {
     if (err) return res.status(500).json({ message: "Database error" });
     if (data.length === 0) return res.status(401).json({ message: "Invalid credentials" });
@@ -125,7 +125,7 @@ app.post("/login", (req, res) => {
     return res.json({
       message: "Login successful",
       token,
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
   });
 });
