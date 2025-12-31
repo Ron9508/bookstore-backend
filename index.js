@@ -84,3 +84,43 @@ app.post("/books", (req, res) => {
   });
 });
 
+// Update a book
+app.put("/books/:id", (req, res) => {
+  const bookId = req.params.id;
+  const { title, author, isbn13, price, stock } = req.body;
+
+  if (!title || !author || !isbn13 || price === undefined || stock === undefined) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  const q = `
+    UPDATE books
+    SET title = ?, author = ?, isbn13 = ?, price = ?, stock = ?
+    WHERE id = ?
+  `;
+
+  const values = [
+    title,
+    author,
+    String(isbn13),
+    Number(price),
+    Number(stock),
+    bookId,
+  ];
+
+  db.query(q, values, (err, result) => {
+    if (err) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res.status(409).json({ message: "ISBN already exists" });
+      }
+      console.error(err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    return res.json({ message: "Book updated successfully" });
+  });
+});
