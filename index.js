@@ -64,7 +64,7 @@ app.post("/signup", (req, res) => {
 
   const checkQ = "SELECT id FROM users WHERE email = ?";
   db.query(checkQ, [email], async (err, data) => {
-    if (err) return res.status(500).json({ message: err.message });
+    if (err) return res.status(500).json({ message: err.message, code:err.code });
     if (data.length > 0) return res.status(409).json({ message: "Email already exists" });
 
     try {
@@ -93,7 +93,7 @@ app.post("/login", (req, res) => {
 
   const q = "SELECT id, name, email, role, password_hash FROM users WHERE email = ?";
   db.query(q, [email], async (err, data) => {
-    if (err) return res.status(500).json({ message: err.message });
+    if (err) return res.status(500).json({ message: err.message, code:err.code });
     if (data.length === 0) return res.status(401).json({ message: "Invalid credentials" });
 
     const user = data[0];
