@@ -130,6 +130,97 @@ app.post("/login", (req, res) => {
   });
 });
 
+// Orders
+app.post("/orders", verifyToken, (req, res) => {
+  const userId = req.user.id;
+  const items = req.body.items; // [{ book_id, quantity }]
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: "Order items are required" });
+  }
+
+  // 1) Load current prices for the requested books
+  const bookIds = items.map((it) => it.book_id);
+  const qBooks = `SELECT id, price FROM books WHERE id IN (${bookIds.map(() => "?").join(",")})`;
+
+  db.query(qBooks, bookIds, (err, books) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (books.length !== bookIds.length) {
+      return res.status(400).json({ message: "One or more books not found" });
+    }
+
+    const priceMap = new Map(books.map((b) => [b.id, Number(b.price)]));
+
+    // compute total
+    let total = 0;
+    for (const it of items) {
+      const qty = Number(it.quantity);
+      if (!Number.isInteger(qty) || qty <= 0) {
+        return res.status(400).json({ message: "Invalid quantity" });
+      }
+      total += priceMap.get(it.book_id) * qty;
+    }
+
+    // 2) Create order row
+    const qOrder = "INSERT INTO orders (user_id, total, status) VALUES (?, ?, 'pending')";
+    db.query(qOrder, [userId, total], (err2, orderResult) => {
+      if (err2) {
+        console.error(err2);
+        return res.status(500).json({ message: "Database error" });
+      }
+
+      const orderId = orderResult.insertId;
+
+      // 3) Insert order_items
+      const qItem = "INSERT INTO order_items (order_id, book_id, quantity, price) VALUES ?";
+      const values = items.map((it) => [
+        orderId,
+        it.book_id,
+        Number(it.quantity),
+        priceMap.get(it.book_id),
+      ]);
+
+      db.query(qItem, [values], (err3) => {
+        if (err3) {
+          console.error(err3);
+          return res.status(500).json({ message: "Database error" });
+        }
+
+        return res.status(201).json({ message: "Order created", orderId, total });
+      });
+    });
+  });
+});
+
+// My orders
+app.get("/orders/my", verifyToken, (req, res) => {
+  const userId = req.user.id;
+
+  const q = `
+    SELECT o.id AS order_id, o.total, o.status, o.created_at,
+           oi.book_id, oi.quantity, oi.price,
+           b.title, b.author, b.isbn13
+    FROM orders o
+    JOIN order_items oi ON oi.order_id = o.id
+    JOIN books b ON b.id = oi.book_id
+    WHERE o.user_id = ?
+    ORDER BY o.created_at DESC, o.id DESC
+  `;
+
+  db.query(q, [userId], (err, rows) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    return res.json(rows);
+  });
+});
+
 
 app.listen(5000, () => {
   console.log("Server running on port 5000");
